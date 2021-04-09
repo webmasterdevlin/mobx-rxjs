@@ -1,8 +1,6 @@
 import React from "react";
 import { useLocalObservable } from "mobx-react-lite";
 import { catchError, map } from "rxjs/operators";
-import { runInAction } from "mobx";
-import { of } from "rxjs";
 
 import { EndPoints } from "../../axios/api-config";
 import { AntiHeroModel, AntiHeroStateType } from "./antiHeroTypes";
@@ -20,11 +18,6 @@ const initialValues: AntiHeroStateType = {
   loading: false,
 };
 
-/*
- * what is runInAction()?
- * https://stackoverflow.com/questions/57271153/mobx-runinaction-usage-why-do-we-need-it
- * */
-
 const AntiHeroContext = () => {
   const store = useLocalObservable(() => ({
     /*observables*/
@@ -35,23 +28,17 @@ const AntiHeroContext = () => {
     },
 
     getAntiHeroesAction() {
-      runInAction(() => {
-        store.loading = true;
-      });
-
+      store.loading = true;
       get(EndPoints.antiHeroes)
         .pipe(
-          map((data) => runInAction(() => (store.antiHeroes = data))),
+          map((data) => (store.antiHeroes = data)),
           catchError((err) => {
             console.log(err);
-            return of([]);
+            return err;
           })
         )
         .subscribe();
-
-      runInAction(() => {
-        store.loading = false;
-      });
+      store.loading = false;
     },
 
     deleteAntiHeroAction(id: string) {
@@ -60,9 +47,9 @@ const AntiHeroContext = () => {
       deleteById(EndPoints.antiHeroes, id)
         .pipe(
           catchError((err) => {
-            store.antiHeroes = previousAntiHeroes;
             console.log(err);
-            return of([]);
+            store.antiHeroes = previousAntiHeroes;
+            return err;
           })
         )
         .subscribe();
@@ -71,10 +58,10 @@ const AntiHeroContext = () => {
     postAntiHeroAction(newAntiHero: AntiHeroModel) {
       post(EndPoints.antiHeroes, newAntiHero)
         .pipe(
-          map((data) => runInAction(() => store.antiHeroes.push(data))),
+          map((data) => store.antiHeroes.push(data)),
           catchError((err) => {
             console.log(err);
-            return of([]);
+            return err;
           })
         )
         .subscribe();

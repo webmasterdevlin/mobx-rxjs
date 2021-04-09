@@ -1,8 +1,6 @@
 import React from "react";
 import { useLocalObservable } from "mobx-react-lite";
 import { catchError, map } from "rxjs/operators";
-import { runInAction } from "mobx";
-import { of } from "rxjs";
 
 import { EndPoints } from "../../axios/api-config";
 import { VillainModel, VillainStateType } from "./villainTypes";
@@ -20,11 +18,6 @@ const initialValues: VillainStateType = {
   loading: false,
 };
 
-/*
- * what is runInAction()?
- * https://stackoverflow.com/questions/57271153/mobx-runinaction-usage-why-do-we-need-it
- * */
-
 const VillainContext = () => {
   const store = useLocalObservable(() => ({
     /*observables*/
@@ -35,23 +28,17 @@ const VillainContext = () => {
     },
 
     getVillainsAction() {
-      runInAction(() => {
-        store.loading = true;
-      });
-
+      store.loading = true;
       get(EndPoints.villains)
         .pipe(
-          map((data) => runInAction(() => (store.villains = data))),
+          map((data) => (store.villains = data)),
           catchError((err) => {
             console.log(err);
-            return of([]);
+            return err;
           })
         )
         .subscribe();
-
-      runInAction(() => {
-        store.loading = false;
-      });
+      store.loading = false;
     },
 
     deleteVillainAction(id: string) {
@@ -60,9 +47,9 @@ const VillainContext = () => {
       deleteById(EndPoints.villains, id)
         .pipe(
           catchError((err) => {
-            store.villains = previousVillains;
             console.log(err);
-            return of([]);
+            store.villains = previousVillains;
+            return err;
           })
         )
         .subscribe();
@@ -71,10 +58,10 @@ const VillainContext = () => {
     postVillainAction(newVillain: VillainModel) {
       post(EndPoints.villains, newVillain)
         .pipe(
-          map((data) => runInAction(() => store.villains.push(data))),
+          map((data) => store.villains.push(data)),
           catchError((err) => {
             console.log(err);
-            return of([]);
+            return err;
           })
         )
         .subscribe();

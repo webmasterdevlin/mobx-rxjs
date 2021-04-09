@@ -1,8 +1,6 @@
 import React from "react";
 import { useLocalObservable } from "mobx-react-lite";
 import { catchError, map } from "rxjs/operators";
-import { runInAction } from "mobx";
-import { of } from "rxjs";
 
 import { EndPoints } from "../../axios/api-config";
 import { HeroModel, HeroStateType } from "./heroTypes";
@@ -20,11 +18,6 @@ const initialValues: HeroStateType = {
   loading: false,
 };
 
-/*
- * what is runInAction()?
- * https://stackoverflow.com/questions/57271153/mobx-runinaction-usage-why-do-we-need-it
- * */
-
 const HeroContext = () => {
   const store = useLocalObservable(() => ({
     /*observables*/
@@ -35,23 +28,17 @@ const HeroContext = () => {
     },
 
     getHeroesAction() {
-      runInAction(() => {
-        store.loading = true;
-      });
-
+      store.loading = true;
       get(EndPoints.heroes)
         .pipe(
-          map((data) => runInAction(() => (store.heroes = data))),
+          map((data) => (store.heroes = data)),
           catchError((err) => {
             console.log(err);
-            return of([]);
+            return err;
           })
         )
         .subscribe();
-
-      runInAction(() => {
-        store.loading = false;
-      });
+      store.loading = false;
     },
 
     deleteHeroAction(id: string) {
@@ -60,9 +47,9 @@ const HeroContext = () => {
       deleteById(EndPoints.heroes, id)
         .pipe(
           catchError((err) => {
-            store.heroes = previousHeroes;
             console.log(err);
-            return of([]);
+            store.heroes = previousHeroes;
+            return err;
           })
         )
         .subscribe();
@@ -71,10 +58,10 @@ const HeroContext = () => {
     postHeroAction(newHero: HeroModel) {
       post(EndPoints.heroes, newHero)
         .pipe(
-          map((data) => runInAction(() => store.heroes.push(data))),
+          map((data) => store.heroes.push(data)),
           catchError((err) => {
             console.log(err);
-            return of([]);
+            return err;
           })
         )
         .subscribe();
